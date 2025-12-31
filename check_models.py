@@ -1,4 +1,3 @@
-# check_models.py
 
 from openai import OpenAI
 

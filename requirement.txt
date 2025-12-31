@@ -1,0 +1,8 @@
+gtts
+streamlit
+openai
+streamlit-mic-recorder
+PyPDF2
+streamlit-TTS
+pyttsx3
+edge-tts

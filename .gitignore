@@ -44,3 +44,10 @@ dist/
 # Temporary files
 *.tmp
 *.bak
+
+
+# Chat history JSON
+chat_history.json
+
+# Database file
+*.db

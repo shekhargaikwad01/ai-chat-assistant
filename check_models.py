@@ -1,6 +1,13 @@
-
+import os
+from dotenv import load_dotenv
 from openai import OpenAI
 
-client = OpenAI(base_url="https://api.groq.com/openai/v1", api_key="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")
+load_dotenv()
+
+client = OpenAI(
+    base_url="https://api.groq.com/openai/v1",
+    api_key=os.getenv("GROQ_API_KEY")
+)
+
 models = client.models.list()
 print([m.id for m in models.data])

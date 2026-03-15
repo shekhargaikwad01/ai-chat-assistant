@@ -526,4 +526,4 @@ if prompt:
         current_chat["last_updated"] = datetime.now().isoformat()
         save_to_local_storage()
         st.rerun()
-        
+    

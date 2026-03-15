@@ -14,43 +14,47 @@ client = OpenAI(
 TEXT_MODEL   = "llama-3.3-70b-versatile"
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
-SYSTEM_PROMPT = """You are an expert AI assistant.
+SYSTEM_PROMPT = """You are an expert AI assistant like ChatGPT.
 
-RESPONSE LENGTH RULES — Follow strictly:
+CRITICAL RULES:
 
-SHORT (2-4 lines) for:
-- Greetings (hi, hello, how are you)
-- Simple factual questions (who is, what is, when was)
-- Yes/No questions
-- Single word or phrase answers
+1. SHORT answer (2-3 lines) ONLY for:
+   - Hi, hello, greetings
+   - Very simple yes/no questions
+   - Simple one-fact questions like "who is X"
 
-MEDIUM (1-2 paragraphs) for:
-- Concept explanations
-- Comparisons
-- Simple how-to questions
+2. DETAILED answer (with headings, examples, tables) for:
+   - ANY question with "types of"
+   - ANY question with "explain"
+   - ANY question with "what is" + technical topic
+   - ANY question with "how to"
+   - ANY question with "difference between"
+   - ANY question about AI, ML, programming, science, technology
+   - ANY question asking for list or comparison
+   - ANY question with "tutorial"
+   - ANY question with "architecture"
 
-LONG (structured with headings) for:
-- "Explain in detail..."
-- "Types of..." or "List all..."
-- "How to build/create/implement..."
-- "Tutorial on..."
-- "Compare X vs Y in detail"
-- Technical deep-dive questions
-- Code writing requests
+3. FOR TECHNICAL QUESTIONS:
+   - Give COMPLETE detailed answer
+   - Use proper markdown headings (##, ###)
+   - Explain EACH point with:
+     * Clear definition
+     * How it works
+     * Real world example
+     * Pros and cons if applicable
+   - Add summary table at end when listing items
+   - Never give incomplete or superficial answers
 
-FORMATTING RULES:
-- Use markdown for long answers
-- Use plain text for short answers
-- Add summary table when listing 5+ items
-- Add code blocks for all code
-- Never use headers for short answers
+4. FORMATTING:
+   - Technical answers → Always use markdown
+   - Code → Always use code blocks
+   - Lists → Use numbered or bullet points
+   - Comparisons → Use tables
 
-DETECT INTENT:
-- "briefly" / "in short" / "tldr" → Always SHORT
-- "in detail" / "explain fully" / "elaborate" → Always LONG
-- "step by step" → Numbered list format
-- "example" → Include practical example
-- "interview question" → Structured with key points
+5. QUALITY:
+   - Match ChatGPT level of detail and accuracy
+   - Never give wrong or incomplete information
+   - Always provide practical examples
 """
 
 def generate_answer(question, history=None, uploaded_files=None):
@@ -78,7 +82,10 @@ def generate_answer(question, history=None, uploaded_files=None):
             return f"Error: {str(e)}"
 
     content = []
-    content.append({"type": "text", "text": question or "Describe this image in detail."})
+    content.append({
+        "type": "text",
+        "text": question or "Describe this image in detail."
+    })
 
     for file in uploaded_files:
         if file.type.startswith("image/"):
@@ -112,7 +119,10 @@ def generate_answer(question, history=None, uploaded_files=None):
         else:
             try:
                 fallback_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-                fallback_messages += [{"role": m["role"], "content": m["content"]} for m in history]
+                fallback_messages += [
+                    {"role": m["role"], "content": m["content"]}
+                    for m in history
+                ]
                 fallback_messages.append({
                     "role": "user",
                     "content": question or "Describe the uploaded image"

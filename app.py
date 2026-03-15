@@ -32,6 +32,25 @@ if "confirm_delete" not in st.session_state:
 if "started" not in st.session_state:
     st.session_state.started = False
 
+# ── LocalStorage se history load karo on first load ──
+LOAD_JS = """
+<script>
+(function() {
+    try {
+        const raw = localStorage.getItem('intellichat_data');
+        if (raw) {
+            const data = JSON.parse(raw);
+            // Send to Streamlit via query param trick
+            const url = new URL(window.location.href);
+            url.searchParams.set('_lsdata', encodeURIComponent(raw));
+            // Store in sessionStorage for Streamlit to read
+            sessionStorage.setItem('intellichat_loaded', raw);
+        }
+    } catch(e) {}
+})();
+</script>
+"""
+
 def init_chat():
     if not st.session_state.all_chats:
         new_id = f"chat_{st.session_state.next_chat_counter}"
@@ -96,7 +115,6 @@ def hide_streamlit_branding():
         document.querySelectorAll('button[aria-label="Manage app"]').forEach(el => el.style.display = 'none');
         const bottomRight = document.querySelector('.st-emotion-cache-h4xjwg');
         if (bottomRight) bottomRight.style.display = 'none';
-        document.querySelectorAll('div[class*="fixedDataTable"]').forEach(el => el.style.display = 'none');
         const allFixed = document.querySelectorAll('section[data-testid="stBottom"] button');
         allFixed.forEach(el => el.style.display = 'none');
     }
@@ -508,3 +526,4 @@ if prompt:
         current_chat["last_updated"] = datetime.now().isoformat()
         save_to_local_storage()
         st.rerun()
+        

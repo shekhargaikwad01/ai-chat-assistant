@@ -402,7 +402,6 @@
 
 
 
-
 import streamlit as st
 from answer_generator import generate_answer
 import re
@@ -412,10 +411,10 @@ import io
 import base64
 import os
 import json
-import uuid
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
+import streamlit.components.v1 as components
 
 load_dotenv()
 
@@ -424,40 +423,64 @@ groq_client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ── Session State ──
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+# ── Session State ──────────────────────────────────
+if "all_chats" not in st.session_state:
+    st.session_state.all_chats = {}
+if "current_chat_id" not in st.session_state:
+    st.session_state.current_chat_id = None
+if "next_chat_counter" not in st.session_state:
+    st.session_state.next_chat_counter = 1
+if "rename_mode" not in st.session_state:
+    st.session_state.rename_mode = None
+if "confirm_delete" not in st.session_state:
+    st.session_state.confirm_delete = None
 if "started" not in st.session_state:
     st.session_state.started = False
-if "history_loaded" not in st.session_state:
-    st.session_state.history_loaded = False
+if "storage_loaded" not in st.session_state:
+    st.session_state.storage_loaded = False
 
-# ── Local Storage se history load/save karne ka JS ──
-def load_history_js():
-    return """
-    <script>
-    // Load history from localStorage
-    const history = localStorage.getItem('chat_history');
-    if (history) {
-        window.parent.postMessage({
-            type: 'streamlit:setComponentValue',
-            value: history
-        }, '*');
+# ── LocalStorage se data load karo ────────────────
+def init_chat():
+    if not st.session_state.all_chats:
+        new_id = f"chat_{st.session_state.next_chat_counter}"
+        st.session_state.all_chats[new_id] = {
+            "title": "New Chat",
+            "messages": [],
+            "last_updated": datetime.now().isoformat()
+        }
+        st.session_state.current_chat_id = new_id
+        st.session_state.next_chat_counter += 1
+    elif st.session_state.current_chat_id not in st.session_state.all_chats:
+        latest_id = max(
+            st.session_state.all_chats.keys(),
+            key=lambda k: st.session_state.all_chats[k].get("last_updated", "")
+        )
+        st.session_state.current_chat_id = latest_id
+
+init_chat()
+
+current_messages = st.session_state.all_chats[st.session_state.current_chat_id]["messages"]
+current_chat = st.session_state.all_chats[st.session_state.current_chat_id]
+
+# ── Save to localStorage ───────────────────────────
+def save_to_local_storage():
+    data = {
+        "all_chats": st.session_state.all_chats,
+        "next_counter": st.session_state.next_chat_counter
     }
-
-    // Listen for save requests
-    window.addEventListener('message', function(e) {
-        if (e.data.type === 'save_history') {
-            localStorage.setItem('chat_history', e.data.history);
-        }
-        if (e.data.type === 'clear_history') {
-            localStorage.removeItem('chat_history');
-        }
-    });
+    data_json = json.dumps(data, ensure_ascii=False)
+    js_code = f"""
+    <script>
+    try {{
+        localStorage.setItem('intellichat_data', {json.dumps(data_json)});
+    }} catch(e) {{
+        console.log('Save error:', e);
+    }}
     </script>
     """
+    components.html(js_code, height=0)
 
-# ── TTS ──────────────────────────────────────────
+# ── TTS ───────────────────────────────────────────
 
 async def get_edge_audio(text, voice):
     communicate = edge_tts.Communicate(text, voice)
@@ -517,41 +540,6 @@ header[data-testid="stHeader"] { background: transparent; }
 </style>
 """, unsafe_allow_html=True)
 
-# ── Local Storage Component ───────────────────────
-# Ye user ke browser mein history save karega
-local_storage_html = """
-<script>
-// Jab page load ho toh history load karo
-window.onload = function() {
-    try {
-        const savedHistory = localStorage.getItem('intellichat_history');
-        if (savedHistory) {
-            // Streamlit ko bhejo
-            const data = JSON.parse(savedHistory);
-            sessionStorage.setItem('loaded_history', savedHistory);
-        }
-    } catch(e) {
-        console.log('History load error:', e);
-    }
-}
-
-// Save function
-function saveHistory(messages) {
-    try {
-        localStorage.setItem('intellichat_history', JSON.stringify(messages));
-    } catch(e) {
-        console.log('Save error:', e);
-    }
-}
-
-// Clear function  
-function clearHistory() {
-    localStorage.removeItem('intellichat_history');
-}
-</script>
-"""
-st.components.v1.html(local_storage_html, height=0)
-
 # ── SPLASH SCREEN ─────────────────────────────────
 
 if not st.session_state.started:
@@ -579,30 +567,132 @@ if not st.session_state.started:
         st.rerun()
     st.stop()
 
-# ── MAIN HEADER ───────────────────────────────────
+# ── SIDEBAR ───────────────────────────────────────
 
-st.markdown("""
-    <h2 style='margin:0 0 8px 0; padding:0;'>🤖 IntelliChat AI</h2>
-    <hr style='margin:0 0 16px 0'>
-""", unsafe_allow_html=True)
+with st.sidebar:
+    st.markdown("## 🤖 IntelliChat AI")
 
-# Clear chat button
-if st.button("🗑️ Clear Chat", type="secondary"):
-    st.session_state.messages = []
-    # Browser se bhi clear karo
-    st.components.v1.html("""
-        <script>
-        localStorage.removeItem('intellichat_history');
-        </script>
-    """, height=0)
-    st.rerun()
+    if st.button("➕ New Chat", use_container_width=True, type="primary"):
+        new_id = f"chat_{st.session_state.next_chat_counter}"
+        st.session_state.all_chats[new_id] = {
+            "title": "New Chat",
+            "messages": [],
+            "last_updated": datetime.now().isoformat()
+        }
+        st.session_state.current_chat_id = new_id
+        st.session_state.next_chat_counter += 1
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("**Your chats**")
+
+    sorted_chats = sorted(
+        [
+            (cid, c) for cid, c in st.session_state.all_chats.items()
+            if c.get("messages") or cid == st.session_state.current_chat_id
+        ],
+        key=lambda x: x[1].get("last_updated", "1970-01-01T00:00:00"),
+        reverse=True
+    )
+
+    if not sorted_chats:
+        st.caption("No chats yet. Start typing below!")
+    else:
+        for chat_id, chat in sorted_chats:
+            title = chat.get("title", "New Chat")
+            is_active = chat_id == st.session_state.current_chat_id
+
+            col_t, col_r, col_d = st.columns([6, 1, 1])
+
+            with col_t:
+                btn_type = "secondary" if is_active else "tertiary"
+                if st.button(f"💬 {title}", key=f"chat_select_{chat_id}",
+                             use_container_width=True, type=btn_type):
+                    st.session_state.current_chat_id = chat_id
+                    st.session_state.rename_mode = None
+                    st.session_state.confirm_delete = None
+                    st.rerun()
+
+            with col_r:
+                if st.button("✏️", key=f"rename_btn_{chat_id}", help="Rename"):
+                    st.session_state.rename_mode = chat_id
+                    st.session_state.confirm_delete = None
+                    st.rerun()
+
+            with col_d:
+                if st.button("🗑️", key=f"delete_btn_{chat_id}", help="Delete"):
+                    st.session_state.confirm_delete = chat_id
+                    st.session_state.rename_mode = None
+                    st.rerun()
+
+            if st.session_state.rename_mode == chat_id:
+                new_title_val = st.text_input(
+                    "New title", value=title,
+                    key=f"rename_input_{chat_id}", max_chars=50
+                )
+                c1, c2 = st.columns(2)
+                with c1:
+                    if st.button("Save", key=f"rename_save_{chat_id}", type="primary"):
+                        if new_title_val.strip():
+                            st.session_state.all_chats[chat_id]["title"] = new_title_val.strip()
+                            save_to_local_storage()
+                        st.session_state.rename_mode = None
+                        st.rerun()
+                with c2:
+                    if st.button("Cancel", key=f"rename_cancel_{chat_id}"):
+                        st.session_state.rename_mode = None
+                        st.rerun()
+
+            if st.session_state.confirm_delete == chat_id:
+                st.warning(f"Delete **{title}**?")
+                c1, c2 = st.columns(2)
+                with c1:
+                    if st.button("Yes", key=f"del_yes_{chat_id}", type="primary"):
+                        del st.session_state.all_chats[chat_id]
+                        if st.session_state.current_chat_id == chat_id:
+                            remaining = [
+                                c for c in st.session_state.all_chats
+                                if st.session_state.all_chats[c].get("messages")
+                            ]
+                            if remaining:
+                                st.session_state.current_chat_id = max(
+                                    remaining,
+                                    key=lambda k: st.session_state.all_chats[k].get("last_updated", "")
+                                )
+                            else:
+                                new_id = f"chat_{st.session_state.next_chat_counter}"
+                                st.session_state.all_chats[new_id] = {
+                                    "title": "New Chat", "messages": [],
+                                    "last_updated": datetime.now().isoformat()
+                                }
+                                st.session_state.current_chat_id = new_id
+                                st.session_state.next_chat_counter += 1
+                        st.session_state.confirm_delete = None
+                        save_to_local_storage()
+                        st.rerun()
+                with c2:
+                    if st.button("No", key=f"del_no_{chat_id}"):
+                        st.session_state.confirm_delete = None
+                        st.rerun()
+
+    st.markdown("---")
+    st.caption("Made with Groq + Streamlit")
+
+# ── MAIN AREA ─────────────────────────────────────
+
+st.markdown(
+    f"<h2 style='margin:0 0 8px 0; padding:0;'>{current_chat.get('title', 'New Chat')}</h2>"
+    f"<hr style='margin:0 0 16px 0'>",
+    unsafe_allow_html=True
+)
 
 # ── CHAT MESSAGES ─────────────────────────────────
 
-for msg in st.session_state.messages:
+for msg in current_messages:
     if msg["role"] == "user":
         with st.chat_message("user"):
-            st.markdown(msg["content"])
+            if msg.get("content"):
+                st.markdown(msg["content"])
             if msg.get("has_files"):
                 st.caption("📎 Attachments included")
     else:
@@ -657,17 +747,25 @@ if prompt:
                 elif file.type.startswith("video/"):
                     st.video(file)
 
-        st.session_state.messages.append({
+        current_messages.append({
             "role": "user",
             "content": display_text,
             "has_files": bool(uploaded_files)
         })
 
+        # Auto title
+        if len(current_messages) == 1:
+            first_text = display_text or "New Chat"
+            short_title = (first_text[:35] + "...") if len(first_text) > 35 else first_text
+            current_chat["title"] = short_title
+
+        current_chat["last_updated"] = datetime.now().isoformat()
+
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
                 history = [
                     {"role": m["role"], "content": m["content"]}
-                    for m in st.session_state.messages[:-1]
+                    for m in current_messages[:-1]
                 ]
                 response = generate_answer(display_text, history, uploaded_files)
                 if not response.strip():
@@ -680,17 +778,11 @@ if prompt:
                         spoken += " (see full answer above)"
                     play_audio(spoken)
 
-        st.session_state.messages.append({
+        current_messages.append({
             "role": "assistant",
             "content": response
         })
 
-        # Browser localStorage mein save karo
-        messages_json = json.dumps(st.session_state.messages)
-        save_js = f"""
-        <script>
-        localStorage.setItem('intellichat_history', {json.dumps(messages_json)});
-        </script>
-        """
-        st.components.v1.html(save_js, height=0)
+        current_chat["last_updated"] = datetime.now().isoformat()
+        save_to_local_storage()
         st.rerun()

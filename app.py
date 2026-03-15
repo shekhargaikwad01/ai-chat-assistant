@@ -71,6 +71,38 @@ def save_to_local_storage():
     """
     components.html(js_code, height=0)
 
+def hide_streamlit_branding():
+    components.html("""
+    <script>
+    function hideElements() {
+        document.querySelectorAll('a[href*="streamlit.io"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('a[href*="github.com"]').forEach(el => el.style.display = 'none');
+        const toolbar = document.querySelector('[data-testid="stToolbar"]');
+        if (toolbar) toolbar.style.display = 'none';
+        const header = document.querySelector('[data-testid="stHeader"]');
+        if (header) header.style.display = 'none';
+        const footer = document.querySelector('footer');
+        if (footer) footer.style.display = 'none';
+        document.querySelectorAll('button[kind="header"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-testid="stActionButtonIcon"]').forEach(el => {
+            if (el.closest('button')) el.closest('button').style.display = 'none';
+        });
+        document.querySelectorAll('[class*="ToolbarActions"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[class*="StatusWidget"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[class*="viewerBadge"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[class*="decoration"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[class*="Toolbar"]').forEach(el => el.style.display = 'none');
+    }
+    hideElements();
+    setTimeout(hideElements, 500);
+    setTimeout(hideElements, 1000);
+    setTimeout(hideElements, 2000);
+    setTimeout(hideElements, 3000);
+    const observer = new MutationObserver(hideElements);
+    observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+    """, height=0)
+
 async def get_edge_audio(text, voice):
     communicate = edge_tts.Communicate(text, voice)
     audio_bytes = io.BytesIO()
@@ -199,6 +231,7 @@ if not st.session_state.started:
     if st.button("Start Chatting 🚀", type="primary", use_container_width=True, key="start_btn"):
         st.session_state.started = True
         st.rerun()
+    hide_streamlit_branding()
     st.stop()
 
 with st.sidebar:
@@ -368,6 +401,8 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+hide_streamlit_branding()
 
 for msg in current_messages:
     if msg["role"] == "user":

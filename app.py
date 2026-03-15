@@ -19,7 +19,6 @@ groq_client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-# ── Session State ──────────────────────────────────
 if "all_chats" not in st.session_state:
     st.session_state.all_chats = {}
 if "current_chat_id" not in st.session_state:
@@ -32,10 +31,7 @@ if "confirm_delete" not in st.session_state:
     st.session_state.confirm_delete = None
 if "started" not in st.session_state:
     st.session_state.started = False
-if "storage_loaded" not in st.session_state:
-    st.session_state.storage_loaded = False
 
-# ── LocalStorage se data load karo ────────────────
 def init_chat():
     if not st.session_state.all_chats:
         new_id = f"chat_{st.session_state.next_chat_counter}"
@@ -58,7 +54,6 @@ init_chat()
 current_messages = st.session_state.all_chats[st.session_state.current_chat_id]["messages"]
 current_chat = st.session_state.all_chats[st.session_state.current_chat_id]
 
-# ── Save to localStorage ───────────────────────────
 def save_to_local_storage():
     data = {
         "all_chats": st.session_state.all_chats,
@@ -75,8 +70,6 @@ def save_to_local_storage():
     </script>
     """
     components.html(js_code, height=0)
-
-# ── TTS ───────────────────────────────────────────
 
 async def get_edge_audio(text, voice):
     communicate = edge_tts.Communicate(text, voice)
@@ -125,48 +118,101 @@ def play_audio(text):
     except Exception as e:
         st.error(f"Audio issue: {e}")
 
-# ── PAGE CONFIG ───────────────────────────────────
-
-st.set_page_config(page_title="IntelliChat AI", page_icon="🤖", layout="wide")
+st.set_page_config(
+    page_title="IntelliChat AI",
+    page_icon="🤖",
+    layout="wide"
+)
 
 st.markdown("""
 <style>
-.block-container { padding-top: 1rem !important; }
-header[data-testid="stHeader"] { background: transparent; }
+#MainMenu {visibility: hidden !important;}
+footer {visibility: hidden !important;}
+header {visibility: hidden !important;}
+[data-testid="stToolbar"] {display: none !important;}
+[data-testid="stDecoration"] {display: none !important;}
+[data-testid="stStatusWidget"] {display: none !important;}
+.viewerBadge_container__1QSob {display: none !important;}
+.viewerBadge_link__1S137 {display: none !important;}
+#stDecoration {display: none !important;}
+button[kind="header"] {display: none !important;}
+[data-testid="manage-app-button"] {display: none !important;}
+.block-container {padding: 0 !important; max-width: 100% !important;}
+[data-testid="stSidebar"] {background: #F8F7FF !important; border-right: 0.5px solid #E0DEFC !important;}
+[data-testid="stSidebar"] > div {padding: 0 !important;}
+.sidebar-logo {display: flex; align-items: center; gap: 10px; padding: 20px 16px 16px; border-bottom: 0.5px solid #E0DEFC; margin-bottom: 12px;}
+.logo-icons {display: flex; gap: 6px;}
+.logo-icon-1 {width: 32px; height: 32px; border-radius: 8px; background: #534AB7; display: flex; align-items: center; justify-content: center;}
+.logo-icon-2 {width: 32px; height: 32px; border-radius: 8px; background: #7F77DD; display: flex; align-items: center; justify-content: center;}
+.logo-text {font-size: 15px; font-weight: 600; color: #3C3489;}
+.chat-item-active {background: #EEEDFE; border: 0.5px solid #AFA9EC; border-radius: 8px; padding: 9px 12px; margin-bottom: 4px;}
+.chat-title-active {font-size: 13px; font-weight: 500; color: #3C3489; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+.chat-time-active {font-size: 11px; color: #7F77DD; margin-top: 2px;}
+.main-header {display: flex; align-items: center; padding: 14px 24px; border-bottom: 0.5px solid #E0DEFC; background: white;}
+.header-left {display: flex; align-items: center; gap: 10px;}
+.header-icon {width: 34px; height: 34px; border-radius: 8px; background: #534AB7; display: flex; align-items: center; justify-content: center;}
+.header-title {font-size: 15px; font-weight: 600; color: #1a1a2e; margin: 0;}
+.header-subtitle {font-size: 11px; color: #7F77DD; margin: 0;}
+.section-label {font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.5px; padding: 4px 16px 8px;}
+.sidebar-divider {border: none; border-top: 0.5px solid #E0DEFC; margin: 8px 16px;}
+[data-testid="stChatMessage"] {padding: 4px 24px !important;}
 </style>
 """, unsafe_allow_html=True)
 
-# ── SPLASH SCREEN ─────────────────────────────────
-
 if not st.session_state.started:
     st.markdown("""
-        <style>
-        .welcome {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; height: 90vh;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: white; text-align: center; padding: 2rem; border-radius: 1rem;
-        }
-        .wtitle { font-size: 4rem; font-weight: bold;
-                  text-shadow: 0 0 20px rgba(0,255,255,0.6); margin: 1rem 0; }
-        .wsub   { font-size: 1.6rem; margin: 1rem 0; }
-        </style>
-        <div class="welcome">
-            <h1 class="wtitle">🤖 IntelliChat AI</h1>
-            <p class="wsub">Ask anything — Voice, Text or Image</p>
-            <p>Press the button below to start!</p>
+    <style>
+    .stApp { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e) !important; }
+    </style>
+    <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:90vh; text-align:center; padding:2rem;">
+        <div style="display:flex; gap:12px; margin-bottom:24px;">
+            <div style="width:56px; height:56px; border-radius:14px; background:#534AB7; display:flex; align-items:center; justify-content:center;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C9 2 7 4 7 6.5c0 .8.2 1.5.6 2.1C6.1 9.2 5 10.7 5 12.5c0 1.4.6 2.6 1.5 3.5C6.2 16.6 6 17.3 6 18c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4 0-.7-.2-1.4-.5-2 .9-.9 1.5-2.1 1.5-3.5 0-1.8-1.1-3.3-2.6-4-.4-.6-.6-1.3-.6-2.1C15.8 4 13.8 2 12 2z" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+                    <circle cx="10" cy="13" r="1" fill="white"/>
+                    <circle cx="14" cy="13" r="1" fill="white"/>
+                    <path d="M10 17c.6.6 1.4 1 2 1s1.4-.4 2-1" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div style="width:56px; height:56px; border-radius:14px; background:#7F77DD; display:flex; align-items:center; justify-content:center;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 10h8M8 14h5" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+            </div>
         </div>
+        <h1 style="font-size:3.5rem; font-weight:700; color:white; margin:0 0 12px; text-shadow:0 0 30px rgba(127,119,221,0.8);">IntelliChat AI</h1>
+        <p style="font-size:1.3rem; color:#AFA9EC; margin:0 0 8px;">Ask anything — Voice, Text or Image</p>
+        <p style="font-size:1rem; color:#7F77DD; margin:0 0 40px;">Powered by Groq + Tavily Web Search</p>
+    </div>
     """, unsafe_allow_html=True)
-    if st.button("Start Chatting 🚀", type="primary",
-                 use_container_width=True, key="start_btn"):
+    if st.button("Start Chatting 🚀", type="primary", use_container_width=True, key="start_btn"):
         st.session_state.started = True
         st.rerun()
     st.stop()
 
-# ── SIDEBAR ───────────────────────────────────────
-
 with st.sidebar:
-    st.markdown("## 🤖 IntelliChat AI")
+    st.markdown("""
+    <div class="sidebar-logo">
+        <div class="logo-icons">
+            <div class="logo-icon-1">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C9 2 7 4 7 6.5c0 .8.2 1.5.6 2.1C6.1 9.2 5 10.7 5 12.5c0 1.4.6 2.6 1.5 3.5C6.2 16.6 6 17.3 6 18c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4 0-.7-.2-1.4-.5-2 .9-.9 1.5-2.1 1.5-3.5 0-1.8-1.1-3.3-2.6-4-.4-.6-.6-1.3-.6-2.1C15.8 4 13.8 2 12 2z" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+                    <circle cx="10" cy="13" r="1" fill="white"/>
+                    <circle cx="14" cy="13" r="1" fill="white"/>
+                    <path d="M10 17c.6.6 1.4 1 2 1s1.4-.4 2-1" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <div class="logo-icon-2">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M8 10h8M8 14h5" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+            </div>
+        </div>
+        <span class="logo-text">IntelliChat AI</span>
+    </div>
+    """, unsafe_allow_html=True)
 
     if st.button("➕ New Chat", use_container_width=True, type="primary"):
         new_id = f"chat_{st.session_state.next_chat_counter}"
@@ -179,8 +225,7 @@ with st.sidebar:
         st.session_state.next_chat_counter += 1
         st.rerun()
 
-    st.markdown("---")
-    st.markdown("**Your chats**")
+    st.markdown('<div class="section-label">Recent</div>', unsafe_allow_html=True)
 
     sorted_chats = sorted(
         [
@@ -192,22 +237,43 @@ with st.sidebar:
     )
 
     if not sorted_chats:
-        st.caption("No chats yet. Start typing below!")
+        st.caption("No chats yet. Start typing!")
     else:
         for chat_id, chat in sorted_chats:
             title = chat.get("title", "New Chat")
             is_active = chat_id == st.session_state.current_chat_id
 
+            last_updated = chat.get("last_updated", "")
+            try:
+                dt = datetime.fromisoformat(last_updated)
+                now = datetime.now()
+                diff = now - dt
+                if diff.days == 0:
+                    time_str = "Today"
+                elif diff.days == 1:
+                    time_str = "Yesterday"
+                else:
+                    time_str = f"{diff.days} days ago"
+            except:
+                time_str = ""
+
             col_t, col_r, col_d = st.columns([6, 1, 1])
 
             with col_t:
-                btn_type = "secondary" if is_active else "tertiary"
-                if st.button(f"💬 {title}", key=f"chat_select_{chat_id}",
-                             use_container_width=True, type=btn_type):
-                    st.session_state.current_chat_id = chat_id
-                    st.session_state.rename_mode = None
-                    st.session_state.confirm_delete = None
-                    st.rerun()
+                if is_active:
+                    st.markdown(f"""
+                    <div class="chat-item-active">
+                        <div class="chat-title-active">{title}</div>
+                        <div class="chat-time-active">{time_str}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                else:
+                    if st.button(f"💬 {title}", key=f"chat_select_{chat_id}",
+                                 use_container_width=True):
+                        st.session_state.current_chat_id = chat_id
+                        st.session_state.rename_mode = None
+                        st.session_state.confirm_delete = None
+                        st.rerun()
 
             with col_r:
                 if st.button("✏️", key=f"rename_btn_{chat_id}", help="Rename"):
@@ -271,18 +337,27 @@ with st.sidebar:
                         st.session_state.confirm_delete = None
                         st.rerun()
 
-    st.markdown("---")
-    st.caption("Made with Groq + Streamlit")
+    st.markdown('<hr class="sidebar-divider">', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:11px; color:#999; text-align:center; padding:8px;">Powered by Groq + Tavily</div>', unsafe_allow_html=True)
 
-# ── MAIN AREA ─────────────────────────────────────
-
-st.markdown(
-    f"<h2 style='margin:0 0 8px 0; padding:0;'>{current_chat.get('title', 'New Chat')}</h2>"
-    f"<hr style='margin:0 0 16px 0'>",
-    unsafe_allow_html=True
-)
-
-# ── CHAT MESSAGES ─────────────────────────────────
+st.markdown("""
+<div class="main-header">
+    <div class="header-left">
+        <div class="header-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2C9 2 7 4 7 6.5c0 .8.2 1.5.6 2.1C6.1 9.2 5 10.7 5 12.5c0 1.4.6 2.6 1.5 3.5C6.2 16.6 6 17.3 6 18c0 2.2 1.8 4 4 4h4c2.2 0 4-1.8 4-4 0-.7-.2-1.4-.5-2 .9-.9 1.5-2.1 1.5-3.5 0-1.8-1.1-3.3-2.6-4-.4-.6-.6-1.3-.6-2.1C15.8 4 13.8 2 12 2z" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+                <circle cx="10" cy="13" r="1" fill="white"/>
+                <circle cx="14" cy="13" r="1" fill="white"/>
+                <path d="M10 17c.6.6 1.4 1 2 1s1.4-.4 2-1" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div>
+            <p class="header-title">IntelliChat AI</p>
+            <p class="header-subtitle">Powered by Groq + Tavily</p>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 for msg in current_messages:
     if msg["role"] == "user":
@@ -294,8 +369,6 @@ for msg in current_messages:
     else:
         with st.chat_message("assistant"):
             st.markdown(msg["content"])
-
-# ── INPUT ─────────────────────────────────────────
 
 prompt = st.chat_input(
     "Ask anything... (text or 🎤 voice)",
@@ -349,7 +422,6 @@ if prompt:
             "has_files": bool(uploaded_files)
         })
 
-        # Auto title
         if len(current_messages) == 1:
             first_text = display_text or "New Chat"
             short_title = (first_text[:35] + "...") if len(first_text) > 35 else first_text

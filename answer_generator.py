@@ -10,8 +10,9 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-TEXT_MODEL   = "mixtral-8x7b-32768"
+TEXT_MODEL   = "llama-3.3-70b-versatile"
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
+SEARCH_MODEL = "compound-beta"
 
 SYSTEM_PROMPT = """You are an expert AI assistant like ChatGPT.
 
@@ -25,7 +26,6 @@ ANTI-HALLUCINATION RULES — MOST IMPORTANT:
 7. For technical topics → use only established facts
 
 RESPONSE LENGTH RULES:
-
 SHORT (2-3 lines) for:
 - Greetings
 - Simple one-fact questions
@@ -53,6 +53,15 @@ QUALITY RULES:
 - Always verify facts before stating
 """
 
+# Simple greetings detect karo
+def is_simple_greeting(question):
+    greetings = [
+        "hi", "hello", "hey", "how are you",
+        "good morning", "good evening", "bye",
+        "thank you", "thanks", "ok", "okay"
+    ]
+    return question.lower().strip() in greetings
+
 def generate_answer(question, history=None, uploaded_files=None):
     if history is None:
         history = []
@@ -67,16 +76,35 @@ def generate_answer(question, history=None, uploaded_files=None):
     if not has_images:
         messages.append({"role": "user", "content": question or "Hello"})
         try:
+            # Simple greeting → normal model (save tokens)
+            # Technical question → compound-beta (web search)
+            if is_simple_greeting(question or ""):
+                model_to_use = TEXT_MODEL
+            else:
+                model_to_use = SEARCH_MODEL
+
             response = client.chat.completions.create(
-                model=TEXT_MODEL,
+                model=model_to_use,
                 messages=messages,
-                max_tokens=1500,
+                max_tokens=2000,
                 temperature=0.1
             )
             return response.choices[0].message.content
-        except Exception as e:
-            return f"Error: {str(e)}"
 
+        except Exception as e:
+            # Fallback to normal model
+            try:
+                response = client.chat.completions.create(
+                    model=TEXT_MODEL,
+                    messages=messages,
+                    max_tokens=2000,
+                    temperature=0.1
+                )
+                return response.choices[0].message.content
+            except Exception as e2:
+                return f"Error: {str(e2)}"
+
+    # Image handling
     content = []
     content.append({
         "type": "text",

@@ -137,6 +137,16 @@ header {visibility: hidden !important;}
 #stDecoration {display: none !important;}
 button[kind="header"] {display: none !important;}
 [data-testid="manage-app-button"] {display: none !important;}
+[data-testid="stActionButtonIcon"] {display: none !important;}
+.stActionButton {display: none !important;}
+div[class*="StatusWidget"] {display: none !important;}
+div[class*="ToolbarActions"] {display: none !important;}
+div[class*="Toolbar"] {display: none !important;}
+.st-emotion-cache-czk5ss {display: none !important;}
+.st-emotion-cache-1dp5vir {display: none !important;}
+a[href*="streamlit.io"] {display: none !important;}
+a[href*="github.com/streamlit"] {display: none !important;}
+button[data-testid="baseButton-header"] {display: none !important;}
 .block-container {padding: 0 !important; max-width: 100% !important;}
 [data-testid="stSidebar"] {background: #F8F7FF !important; border-right: 0.5px solid #E0DEFC !important;}
 [data-testid="stSidebar"] > div {padding: 0 !important;}

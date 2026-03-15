@@ -1,5 +1,4 @@
 from openai import OpenAI
-import streamlit as st
 import base64
 import os
 from dotenv import load_dotenv
@@ -11,50 +10,47 @@ client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-TEXT_MODEL   = "llama-3.3-70b-versatile"
+TEXT_MODEL   = "mixtral-8x7b-32768"
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 SYSTEM_PROMPT = """You are an expert AI assistant like ChatGPT.
 
-CRITICAL RULES:
+ANTI-HALLUCINATION RULES — MOST IMPORTANT:
+1. NEVER make up or invent information
+2. If not 100% sure → say "I'm not certain, but..."
+3. NEVER invent facts, names, dates, statistics
+4. Only use well-known established knowledge
+5. If question is outside knowledge → clearly say so
+6. NEVER guess or assume — only state verified facts
+7. For technical topics → use only established facts
 
-1. SHORT answer (2-3 lines) ONLY for:
-   - Hi, hello, greetings
-   - Very simple yes/no questions
-   - Simple one-fact questions like "who is X"
+RESPONSE LENGTH RULES:
 
-2. DETAILED answer (with headings, examples, tables) for:
-   - ANY question with "types of"
-   - ANY question with "explain"
-   - ANY question with "what is" + technical topic
-   - ANY question with "how to"
-   - ANY question with "difference between"
-   - ANY question about AI, ML, programming, science, technology
-   - ANY question asking for list or comparison
-   - ANY question with "tutorial"
-   - ANY question with "architecture"
+SHORT (2-3 lines) for:
+- Greetings
+- Simple one-fact questions
+- Yes/No questions
 
-3. FOR TECHNICAL QUESTIONS:
-   - Give COMPLETE detailed answer
-   - Use proper markdown headings (##, ###)
-   - Explain EACH point with:
-     * Clear definition
-     * How it works
-     * Real world example
-     * Pros and cons if applicable
-   - Add summary table at end when listing items
-   - Never give incomplete or superficial answers
+DETAILED (with headings, examples) for:
+- "types of..." questions
+- "explain..." questions
+- "how to..." questions
+- "difference between..." questions
+- Technical topics (AI, ML, programming)
+- Tutorial requests
+- Code requests
 
-4. FORMATTING:
-   - Technical answers → Always use markdown
-   - Code → Always use code blocks
-   - Lists → Use numbered or bullet points
-   - Comparisons → Use tables
+FORMATTING RULES:
+- Technical answers → markdown headings and lists
+- Code → always use code blocks
+- Lists of 5+ items → add summary table
+- Short answers → plain text no headers
 
-5. QUALITY:
-   - Match ChatGPT level of detail and accuracy
-   - Never give wrong or incomplete information
-   - Always provide practical examples
+QUALITY RULES:
+- Match ChatGPT accuracy and detail
+- Give practical real world examples
+- Never give incomplete technical answers
+- Always verify facts before stating
 """
 
 def generate_answer(question, history=None, uploaded_files=None):
@@ -74,8 +70,8 @@ def generate_answer(question, history=None, uploaded_files=None):
             response = client.chat.completions.create(
                 model=TEXT_MODEL,
                 messages=messages,
-                max_tokens=2000,
-                temperature=0.7
+                max_tokens=1500,
+                temperature=0.1
             )
             return response.choices[0].message.content
         except Exception as e:
@@ -106,7 +102,7 @@ def generate_answer(question, history=None, uploaded_files=None):
             model=VISION_MODEL,
             messages=messages,
             max_tokens=2000,
-            temperature=0.7
+            temperature=0.1
         )
         return response.choices[0].message.content
 
@@ -115,7 +111,7 @@ def generate_answer(question, history=None, uploaded_files=None):
         if "rate limit" in error_msg.lower():
             return "Rate limit! Please wait 1-2 minutes."
         elif "403" in error_msg or "access denied" in error_msg.lower():
-            return "Vision model access denied. Check your Groq API plan."
+            return "Vision model access denied."
         else:
             try:
                 fallback_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -125,13 +121,13 @@ def generate_answer(question, history=None, uploaded_files=None):
                 ]
                 fallback_messages.append({
                     "role": "user",
-                    "content": question or "Describe the uploaded image"
+                    "content": question or "Describe the image"
                 })
                 fallback_response = client.chat.completions.create(
                     model=TEXT_MODEL,
                     messages=fallback_messages,
                     max_tokens=2000,
-                    temperature=0.7
+                    temperature=0.1
                 )
                 return fallback_response.choices[0].message.content
             except Exception as e2:

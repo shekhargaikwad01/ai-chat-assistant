@@ -92,6 +92,13 @@ def hide_streamlit_branding():
         document.querySelectorAll('[class*="viewerBadge"]').forEach(el => el.style.display = 'none');
         document.querySelectorAll('[class*="decoration"]').forEach(el => el.style.display = 'none');
         document.querySelectorAll('[class*="Toolbar"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('[data-testid="manage-app-button"]').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('button[aria-label="Manage app"]').forEach(el => el.style.display = 'none');
+        const bottomRight = document.querySelector('.st-emotion-cache-h4xjwg');
+        if (bottomRight) bottomRight.style.display = 'none';
+        document.querySelectorAll('div[class*="fixedDataTable"]').forEach(el => el.style.display = 'none');
+        const allFixed = document.querySelectorAll('section[data-testid="stBottom"] button');
+        allFixed.forEach(el => el.style.display = 'none');
     }
     hideElements();
     setTimeout(hideElements, 500);
@@ -179,6 +186,8 @@ div[class*="Toolbar"] {display: none !important;}
 a[href*="streamlit.io"] {display: none !important;}
 a[href*="github.com/streamlit"] {display: none !important;}
 button[data-testid="baseButton-header"] {display: none !important;}
+section[data-testid="stBottom"] button {display: none !important;}
+.st-emotion-cache-h4xjwg {display: none !important;}
 .block-container {padding: 0 !important; max-width: 100% !important;}
 [data-testid="stSidebar"] {background: #F8F7FF !important; border-right: 0.5px solid #E0DEFC !important;}
 [data-testid="stSidebar"] > div {padding: 0 !important;}

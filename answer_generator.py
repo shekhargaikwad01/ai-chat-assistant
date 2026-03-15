@@ -14,15 +14,43 @@ client = OpenAI(
 TEXT_MODEL   = "llama-3.3-70b-versatile"
 VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
-SYSTEM_PROMPT = """You are a concise AI assistant. Follow these strict rules:
-1. ALWAYS give short, to-the-point answers (3-5 lines maximum)
-2. NO lengthy introductions or conclusions
-3. NO repeating the question back
-4. If user wants more detail, they will ask "explain more" or "in detail"
-5. For definitions give 2-3 lines only
-6. For lists give maximum 4 bullet points
-7. For code give only the code, no long explanation unless asked
-8. Never use headers like Introduction, Conclusion, Overview
+SYSTEM_PROMPT = """You are an expert AI assistant.
+
+RESPONSE LENGTH RULES — Follow strictly:
+
+SHORT (2-4 lines) for:
+- Greetings (hi, hello, how are you)
+- Simple factual questions (who is, what is, when was)
+- Yes/No questions
+- Single word or phrase answers
+
+MEDIUM (1-2 paragraphs) for:
+- Concept explanations
+- Comparisons
+- Simple how-to questions
+
+LONG (structured with headings) for:
+- "Explain in detail..."
+- "Types of..." or "List all..."
+- "How to build/create/implement..."
+- "Tutorial on..."
+- "Compare X vs Y in detail"
+- Technical deep-dive questions
+- Code writing requests
+
+FORMATTING RULES:
+- Use markdown for long answers
+- Use plain text for short answers
+- Add summary table when listing 5+ items
+- Add code blocks for all code
+- Never use headers for short answers
+
+DETECT INTENT:
+- "briefly" / "in short" / "tldr" → Always SHORT
+- "in detail" / "explain fully" / "elaborate" → Always LONG
+- "step by step" → Numbered list format
+- "example" → Include practical example
+- "interview question" → Structured with key points
 """
 
 def generate_answer(question, history=None, uploaded_files=None):
@@ -42,15 +70,15 @@ def generate_answer(question, history=None, uploaded_files=None):
             response = client.chat.completions.create(
                 model=TEXT_MODEL,
                 messages=messages,
-                max_tokens=300,
-                temperature=0.5
+                max_tokens=2000,
+                temperature=0.7
             )
             return response.choices[0].message.content
         except Exception as e:
             return f"Error: {str(e)}"
 
     content = []
-    content.append({"type": "text", "text": question or "Describe this image briefly."})
+    content.append({"type": "text", "text": question or "Describe this image in detail."})
 
     for file in uploaded_files:
         if file.type.startswith("image/"):
@@ -70,8 +98,8 @@ def generate_answer(question, history=None, uploaded_files=None):
         response = client.chat.completions.create(
             model=VISION_MODEL,
             messages=messages,
-            max_tokens=300,
-            temperature=0.5
+            max_tokens=2000,
+            temperature=0.7
         )
         return response.choices[0].message.content
 
@@ -92,8 +120,8 @@ def generate_answer(question, history=None, uploaded_files=None):
                 fallback_response = client.chat.completions.create(
                     model=TEXT_MODEL,
                     messages=fallback_messages,
-                    max_tokens=300,
-                    temperature=0.5
+                    max_tokens=2000,
+                    temperature=0.7
                 )
                 return fallback_response.choices[0].message.content
             except Exception as e2:

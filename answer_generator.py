@@ -13,42 +13,16 @@ client = OpenAI(
 
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-TEXT_MODEL   = "openai/gpt-oss-20b"
+TEXT_MODEL   = "openai/gpt-oss-120b"
 VISION_MODEL = "qwen/qwen3.6-27b"
 
 SYSTEM_PROMPT = """You are an expert AI assistant like ChatGPT.
 
-ANTI-HALLUCINATION RULES:
-1. NEVER make up or invent information
-2. If not 100% sure → say "I'm not certain, but..."
-3. Only use provided context and verified knowledge
-4. If question is outside knowledge → clearly say so
-
-RESPONSE LENGTH RULES:
-SHORT (2-3 lines) for:
-- Greetings
-- Simple one-fact questions
-- Yes/No questions
-
-DETAILED (with headings, examples) for:
-- "types of..." questions
-- "explain..." questions
-- "how to..." questions
-- "difference between..." questions
-- Technical topics (AI, ML, programming)
-- Tutorial requests
-- Code requests
-
-FORMATTING RULES:
-- Technical answers → markdown headings and lists
-- Code → always use code blocks
-- Lists of 5+ items → add summary table
-- Short answers → plain text no headers
-
-QUALITY RULES:
-- Match ChatGPT accuracy and detail
-- Give practical real world examples
-- Never give incomplete technical answers
+RULES:
+- Never invent information; say "I'm not certain" if unsure.
+- Keep greetings and simple facts short (2-3 lines).
+- Give detailed, well-formatted answers (headings/lists/code blocks) for technical or "explain/how to/types of" questions.
+- Use markdown for technical answers and code blocks for code.
 """
 
 def should_search(question):
@@ -66,15 +40,16 @@ def web_search(question):
     try:
         result = tavily.search(
             query=question,
-            search_depth="advanced",
-            max_results=5
+            search_depth="basic",
+            max_results=2
         )
         context = ""
         for r in result.get("results", []):
+            snippet = r.get("content", "")[:400]
             context += f"\nSource: {r.get('url', '')}\n"
-            context += f"Content: {r.get('content', '')}\n"
+            context += f"Content: {snippet}\n"
             context += "---\n"
-        return context
+        return context[:1200]
     except Exception as e:
         return ""
 
@@ -83,7 +58,8 @@ def generate_answer(question, history=None, uploaded_files=None):
         history = []
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    messages += [{"role": m["role"], "content": m["content"]} for m in history]
+    trimmed_history = history[-4:] if history else []
+    messages += [{"role": m["role"], "content": m["content"]} for m in trimmed_history]
 
     has_images = uploaded_files and any(
         f.type.startswith("image/") for f in uploaded_files
@@ -120,7 +96,7 @@ Based on the above search results, provide a detailed accurate answer.
             response = client.chat.completions.create(
                 model=TEXT_MODEL,
                 messages=messages,
-                max_tokens=1500,
+                max_tokens=600,
                 temperature=0.1
             )
             return response.choices[0].message.content
@@ -151,7 +127,7 @@ Based on the above search results, provide a detailed accurate answer.
         response = client.chat.completions.create(
             model=VISION_MODEL,
             messages=messages,
-            max_tokens=1500,
+            max_tokens=600,
             temperature=0.1
         )
         return response.choices[0].message.content
@@ -167,7 +143,7 @@ Based on the above search results, provide a detailed accurate answer.
                 fallback_messages = [{"role": "system", "content": SYSTEM_PROMPT}]
                 fallback_messages += [
                     {"role": m["role"], "content": m["content"]}
-                    for m in history
+                    for m in (history[-4:] if history else [])
                 ]
                 fallback_messages.append({
                     "role": "user",
@@ -176,7 +152,7 @@ Based on the above search results, provide a detailed accurate answer.
                 fallback_response = client.chat.completions.create(
                     model=TEXT_MODEL,
                     messages=fallback_messages,
-                    max_tokens=1500,
+                    max_tokens=600,
                     temperature=0.1
                 )
                 return fallback_response.choices[0].message.content

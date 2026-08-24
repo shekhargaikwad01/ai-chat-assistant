@@ -13,8 +13,8 @@ client = OpenAI(
 
 tavily = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
 
-   TEXT_MODEL   = "openai/gpt-oss-120b"
-   VISION_MODEL = "qwen/qwen3.6-27b"
+TEXT_MODEL   = "openai/gpt-oss-120b"
+VISION_MODEL = "qwen/qwen3.6-27b"
 
 SYSTEM_PROMPT = """You are an expert AI assistant like ChatGPT.
 
